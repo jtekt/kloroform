@@ -1,10 +1,12 @@
 {
-  "name": "k8s-hibernator",
+  "name": "kloroform",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "ts-node index.ts"
+    "sedate": "ts-node sedate.ts",
+    "wake": "ts-node wake.ts",
+    "test": "ts-node test.ts"
   },
   "keywords": [],
   "author": "",
@@ -13,6 +15,7 @@
     "@kubernetes/client-node": "^0.21.0"
   },
   "devDependencies": {
+    "dotenv": "^16.4.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.5.2"
   }
