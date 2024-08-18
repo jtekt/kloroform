@@ -5,7 +5,7 @@ import { KLOROFORM_ANNOTATION_KEY } from "./config"
 export const wake = async () => {
   const namespaces = await getNamespaces()
   for await (const namespace of namespaces) {
-    console.log(`Sedating deployments of namespace ${namespace}`)
+    console.log(`Waking up deployments of namespace ${namespace}`)
 
     const deployments = await getDeploymentsOfNamespace(namespace)
     if (!deployments) throw "Failed to get deployments"
