@@ -16,14 +16,14 @@ import (
 )
 
 
-func listnamespaces(namespacesFlag *string, clientset *kubernetes.Clientset, exceptionsFlag *string) []string {
+func listnamespaces(namespacesFlag *string, clientset *kubernetes.Clientset, ignoredNamespace string) []string {
 	var namespaces []string
 
 	if *namespacesFlag != "" {
 		fmt.Printf("Namespaces (user provided): %s\n", *namespacesFlag)
 		namespaces = strings.Split(*namespacesFlag, ",")
 	} else {
-		fmt.Printf("Namespaces: all except following: %s\n", *exceptionsFlag)
+		fmt.Printf("Namespaces: all except following: %s\n", ignoredNamespace)
 
 		namespaceList, err := clientset.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
@@ -34,15 +34,13 @@ func listnamespaces(namespacesFlag *string, clientset *kubernetes.Clientset, exc
 		for _, ns := range namespaceList.Items {
 
 			isException := false
-			for _, exception := range strings.Split(*exceptionsFlag, ",") {
+			for _, exception := range strings.Split(ignoredNamespace, ",") {
 				if exception == ns.Name {
 					isException = true
 				}
 			}
 
-			if(isException) {
-				fmt.Printf("Namespace %s is an exception, ignoring\n", ns.Name)
-			} else {
+			if(!isException){
 				namespaces = append(namespaces, ns.Name)		
 			}
 
@@ -102,8 +100,10 @@ func wakeDeployment(clientset *kubernetes.Clientset, ns string,deployment appsV1
 
 func main() {
 
+	fmt.Print("= Kloroform =\n")
+
 	kloroformAnnotationKey := "kloroform/original-replica-count"
-	defaultExceptions := "kube-system,kube-public,kube-node-lease,longhorn-system,cnpg-system,monitoring"
+	baseExceptions := "kube-system,kube-public,kube-node-lease,longhorn-system,cnpg-system"
 
 	// Loading Kubeconfig
 	var kubeconfig *string
@@ -116,7 +116,7 @@ func main() {
 	
 	wakeFlag := flag.Bool("wake", false, "Wake the cluster up")
 	namespacesFlag := flag.String("namespaces", "", "comma separated list of namespaces to sedate/wake")
-	exceptionsFlag := flag.String("exceptions", defaultExceptions, "comma separated list of namespaces to be excluded")
+	exceptionsFlag := flag.String("exceptions", "", "comma separated list of namespaces to be excluded")
 	
 	
 	flag.Parse()
@@ -126,6 +126,8 @@ func main() {
 	} else {
 		fmt.Print("Operation: sedate\n")
 	}
+
+	ignoredNamespace := baseExceptions + "," + *exceptionsFlag
 	
 
 	// use the current context in kubeconfig
@@ -134,17 +136,14 @@ func main() {
 		panic(err.Error())
 	}
 
-	// create the clientset
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		panic(err.Error())
 	}
 
 
-	// Listing namespaces
-	namespaces := listnamespaces(namespacesFlag, clientset, exceptionsFlag)
+	namespaces := listnamespaces(namespacesFlag, clientset, ignoredNamespace)
 	
-
 	for i, ns := range namespaces {
 
 		fmt.Printf("- Namespace %d of %d: %s\n", i, len(namespaces), ns)
