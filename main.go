@@ -8,11 +8,97 @@ import (
 	"strconv"
 	"strings"
 
+	appsV1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 )
+
+
+func listnamespaces(namespacesFlag *string, clientset *kubernetes.Clientset, exceptionsFlag *string) []string {
+	var namespaces []string
+
+	if *namespacesFlag != "" {
+		fmt.Printf("Namespaces (user provided): %s\n", *namespacesFlag)
+		namespaces = strings.Split(*namespacesFlag, ",")
+	} else {
+		fmt.Printf("Namespaces: all except following: %s\n", *exceptionsFlag)
+
+		namespaceList, err := clientset.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
+		if err != nil {
+			panic(err.Error())
+		}
+		fmt.Printf("There are %d namespaces in the cluster\n", len(namespaceList.Items))
+
+		for _, ns := range namespaceList.Items {
+
+			isException := false
+			for _, exception := range strings.Split(*exceptionsFlag, ",") {
+				if exception == ns.Name {
+					isException = true
+				}
+			}
+
+			if(isException) {
+				fmt.Printf("Namespace %s is an exception, ignoring\n", ns.Name)
+			} else {
+				namespaces = append(namespaces, ns.Name)		
+			}
+
+		}
+	}
+
+	return namespaces
+}
+
+func sedateDeployment(clientset *kubernetes.Clientset, ns string,deployment appsV1.Deployment, kloroformAnnotationKey string){
+	// Do nothing if already sedated
+	if(*deployment.Spec.Replicas == 0) {
+		fmt.Printf("Already has 0 replicas \n")
+		return
+	} 
+
+								
+	annotationsMap := deployment.GetAnnotations()
+	annotationsMap[kloroformAnnotationKey] = strconv.Itoa(int(*deployment.Spec.Replicas))
+	deployment.SetAnnotations(annotationsMap)
+	*deployment.Spec.Replicas = 0
+
+	clientset.AppsV1().Deployments(ns).Update(context.TODO(), &deployment, metav1.UpdateOptions{})
+
+	fmt.Printf("Scaled down to 0 replicas\n")
+
+
+	
+}
+
+
+func wakeDeployment(clientset *kubernetes.Clientset, ns string,deployment appsV1.Deployment, kloroformAnnotationKey string){
+	annotationsMap := deployment.GetAnnotations()
+
+	originalReplicaCountString := annotationsMap[kloroformAnnotationKey]
+
+	if(originalReplicaCountString == "") {
+		fmt.Printf("No kloroform annotation, skipping \n")
+		return
+	} 
+
+	originalReplicaCount, err := strconv.ParseInt(originalReplicaCountString, 10, 32)
+
+	if(err != nil) {
+		panic(err)
+	}
+
+	delete(annotationsMap, kloroformAnnotationKey)
+
+	
+	*deployment.Spec.Replicas = int32(originalReplicaCount)
+
+	clientset.AppsV1().Deployments(ns).Update(context.TODO(), &deployment, metav1.UpdateOptions{})
+	fmt.Printf("Scaled up to %d replicas\n", originalReplicaCount)
+	
+}
 
 func main() {
 
@@ -56,37 +142,8 @@ func main() {
 
 
 	// Listing namespaces
-	var namespaces []string
-
-	if *namespacesFlag != "" {
-		fmt.Printf("Namespaces (user provided): %s\n", *namespacesFlag)
-		namespaces = strings.Split(*namespacesFlag, ",")
-	} else {
-		fmt.Printf("Namespaces: all except following: %s\n", *exceptionsFlag)
-
-		namespaceList, err := clientset.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
-		if err != nil {
-			panic(err.Error())
-		}
-		fmt.Printf("There are %d namespaces in the cluster\n", len(namespaceList.Items))
-
-		for _, ns := range namespaceList.Items {
-
-			isException := false
-			for _, exception := range strings.Split(*exceptionsFlag, ",") {
-				if exception == ns.Name {
-					isException = true
-				}
-			}
-
-			if(isException) {
-				fmt.Printf("Namespace %s is an exception, ignoring\n", ns.Name)
-			} else {
-				namespaces = append(namespaces, ns.Name)		
-			}
-
-		}
-	}
+	namespaces := listnamespaces(namespacesFlag, clientset, exceptionsFlag)
+	
 
 	for i, ns := range namespaces {
 
@@ -100,52 +157,10 @@ func main() {
 		for _,deployment := range(deployments.Items) {
 			fmt.Printf("  - Deployment: %s: ", deployment.Name)
 
-			
 			if *wakeFlag {
-				// Waking
-
-				annotationsMap := deployment.GetAnnotations()
-
-				originalReplicaCountString := annotationsMap[kloroformAnnotationKey]
-
-				if(originalReplicaCountString == "") {
-					fmt.Printf("No kloroform annotation, skipping \n")
-				} else {
-					originalReplicaCount, err := strconv.ParseInt(originalReplicaCountString, 10, 32)
-
-					if(err != nil) {
-						panic(err)
-					}
-	
-					delete(annotationsMap, kloroformAnnotationKey)
-	
-					
-					*deployment.Spec.Replicas = int32(originalReplicaCount)
-	
-					clientset.AppsV1().Deployments(ns).Update(context.TODO(), &deployment, metav1.UpdateOptions{})
-					fmt.Printf("Scaled up to %d replicas\n", originalReplicaCount)
-				}
-
+				wakeDeployment(clientset, ns, deployment, kloroformAnnotationKey)
 			} else {
-				// Sedating
-
-				// Do nothing if already sedated
-				if(*deployment.Spec.Replicas == 0) {
-					fmt.Printf("Already has 0 replicas \n")
-				} else {
-
-											
-					annotationsMap := deployment.GetAnnotations()
-					annotationsMap[kloroformAnnotationKey] = strconv.Itoa(int(*deployment.Spec.Replicas))
-					deployment.SetAnnotations(annotationsMap)
-					*deployment.Spec.Replicas = 0
-
-					clientset.AppsV1().Deployments(ns).Update(context.TODO(), &deployment, metav1.UpdateOptions{})
-
-					fmt.Printf("Scaled down to 0 replicas\n")
-
-
-				}
+				sedateDeployment(clientset, ns, deployment, kloroformAnnotationKey)
 			}
 		}
 	}
