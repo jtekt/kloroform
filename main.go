@@ -57,7 +57,6 @@ func sedateDeployment(clientset *kubernetes.Clientset, ns string,deployment apps
 		return
 	} 
 
-								
 	annotationsMap := deployment.GetAnnotations()
 	annotationsMap[kloroformAnnotationKey] = strconv.Itoa(int(*deployment.Spec.Replicas))
 	deployment.SetAnnotations(annotationsMap)
@@ -66,9 +65,6 @@ func sedateDeployment(clientset *kubernetes.Clientset, ns string,deployment apps
 	clientset.AppsV1().Deployments(ns).Update(context.TODO(), &deployment, metav1.UpdateOptions{})
 
 	fmt.Printf("Scaled down to 0 replicas\n")
-
-
-	
 }
 
 
@@ -95,7 +91,6 @@ func wakeDeployment(clientset *kubernetes.Clientset, ns string,deployment appsV1
 
 	clientset.AppsV1().Deployments(ns).Update(context.TODO(), &deployment, metav1.UpdateOptions{})
 	fmt.Printf("Scaled up to %d replicas\n", originalReplicaCount)
-	
 }
 
 func main() {
