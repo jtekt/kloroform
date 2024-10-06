@@ -16,6 +16,12 @@ To scale down all deployments in a cluster:
 ./kloroform
 ```
 
+For specific namespaces:
+
+```
+./kloroform -namespaces=mynamespace,myothernamespace
+```
+
 ### Scaling back up
 
 ```
