@@ -22,6 +22,12 @@ For specific namespaces:
 ./kloroform -namespaces=mynamespace,myothernamespace
 ```
 
+Specifying kubeconfig path:
+
+```
+./kloroform -kubeconfig=/home/myuser/.kube/config
+```
+
 ### Scaling back up
 
 ```

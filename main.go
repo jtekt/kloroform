@@ -99,10 +99,11 @@ func main() {
 
 	kloroformAnnotationKey := "kloroform/original-replica-count"
 	baseExceptions := "kube-system,kube-public,kube-node-lease,longhorn-system,cnpg-system"
+	home := homedir.HomeDir()
 
 	// Loading Kubeconfig
 	var kubeconfig *string
-	if home := homedir.HomeDir(); home != "" {
+	if home != "" {
 		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
 	} else {
 		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
@@ -110,8 +111,8 @@ func main() {
 
 	
 	wakeFlag := flag.Bool("wake", false, "Wake the cluster up")
-	namespacesFlag := flag.String("namespaces", "", "comma separated list of namespaces to sedate/wake")
-	exceptionsFlag := flag.String("exceptions", "", "comma separated list of namespaces to be excluded")
+	namespacesFlag := flag.String("namespaces", "", "(optional) comma separated list of namespaces to sedate/wake")
+	exceptionsFlag := flag.String("exceptions", "", "(optional) comma separated list of namespaces to be excluded")
 	
 	
 	flag.Parse()
