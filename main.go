@@ -123,9 +123,6 @@ func main() {
 		fmt.Print("Operation: sedate\n")
 	}
 
-	ignoredNamespace := baseExceptions + "," + *exceptionsFlag
-	
-
 	// use the current context in kubeconfig
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 	if err != nil {
@@ -137,7 +134,7 @@ func main() {
 		panic(err.Error())
 	}
 
-
+	ignoredNamespace := baseExceptions + "," + *exceptionsFlag
 	namespaces := listnamespaces(namespacesFlag, clientset, ignoredNamespace)
 	
 	for i, ns := range namespaces {
