@@ -22,6 +22,12 @@ For specific namespaces:
 ./kloroform -namespaces=mynamespace,myothernamespace
 ```
 
+To ignore namespaces:
+
+```
+./kloroform -exceptions=my-namespace,my-other-namespace
+```
+
 Specifying kubeconfig path:
 
 ```
