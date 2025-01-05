@@ -36,6 +36,10 @@ Specifying kubeconfig path:
 
 ### Scaling back up
 
+To scale back up all deployments in a cluster:
+
 ```
 ./kloroform -wake
 ```
+
+Specifying namespaces and kubeconfig follows the same pattern as for scaling down
