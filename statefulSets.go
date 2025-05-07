@@ -20,7 +20,7 @@ func listStatefulSets(clientset *kubernetes.Clientset, ns string) *appsV1.Statef
 }
 
 
-func wakeStatefulSet(clientset *kubernetes.Clientset, ns string,statefulSet appsV1.StatefulSet, kloroformAnnotationKey string){
+func sedateStatefulSet(clientset *kubernetes.Clientset, ns string,statefulSet appsV1.StatefulSet, kloroformAnnotationKey string){
 	// Do nothing if already sedated
 	if(*statefulSet.Spec.Replicas == 0) {
 		fmt.Printf("Already has 0 replicas \n")
@@ -38,7 +38,7 @@ func wakeStatefulSet(clientset *kubernetes.Clientset, ns string,statefulSet apps
 }
 
 
-func sedateStatefulSet(clientset *kubernetes.Clientset, ns string,statefulSet appsV1.StatefulSet, kloroformAnnotationKey string){
+func wakeStatefulSet(clientset *kubernetes.Clientset, ns string,statefulSet appsV1.StatefulSet, kloroformAnnotationKey string){
 	annotationsMap := statefulSet.GetAnnotations()
 
 	originalReplicaCountString := annotationsMap[kloroformAnnotationKey]

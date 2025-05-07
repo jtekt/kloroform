@@ -43,3 +43,11 @@ To scale back up all deployments in a cluster:
 ```
 
 Specifying namespaces and kubeconfig follows the same pattern as for scaling down
+
+## Development
+
+To build executable:
+
+```
+go build
+```
