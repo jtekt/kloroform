@@ -46,8 +46,8 @@ Specifying namespaces and kubeconfig follows the same pattern as for scaling dow
 
 ## Development
 
-To build executable:
+To build executables for windows and linux:
 
-```
-go build
+```bash
+bash build.sh
 ```
